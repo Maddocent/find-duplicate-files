@@ -1,0 +1,31 @@
+Find Duplicate Files
+========================================================
+
+This is a simple script to search a directory tree for all files with duplicate content. it is based upon the python keynote here (TBD)
+
+Step 1: load the digest library so we calculate MD5 hash values
+```{r}
+library("digest")
+```
+
+step 2, create an empty hash to save the results to.
+
+```{r}
+library("hash")
+hashmap <-hash()
+```
+
+step 3: convert the following python code to english description + r code:
+for path, dirs, files, in os.walk('/Volumes/Public/book_k'):
+   for filename in files:
+		 fullname = os.path.join(path,filename)
+		 d = open(fullname).read()
+		 h = hashlib.md5(d).hexdigest()
+		 filelist = hashmap.setdefault(h, [])
+         filelist.append(fullname)
+         
+this chunk below will list the files recursively . Not sure if this enough. I think I really want to "walk" a directory instead. note the regex "JPG|AVI" to isolate the files of interest.   
+```{r}
+results <- dir("/Volumes/Public/book_k/photo_backup/2010disney2/", pattern = "JPG|AVI", recursive=TRUE, all.files =TRUE, full.names=TRUE)
+```         
+         
