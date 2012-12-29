@@ -1,7 +1,6 @@
 Find Duplicate Files
 ------------------------
-This is a simple script to search a directory tree for all files with duplicate content. it is based upon the python code presented by Raymond Hettinger in his PyCon AU 2011 keynote "What Makes Python Awesome". The slides are here: http://slidesha.re/WKkh9M . As an exercise, I decided to convert the code to R. 
-
+This is a simple script to search a directory tree for all files with duplicate content. it is based upon the python code presented by Raymond Hettinger in his PyCon AU 2011 keynote "What Makes Python Awesome". The slides are here: http://slidesha.re/WKkh9M . As an exercise, I decided to convert the " find duplicate files" python code to R. 
 
 ### The Original Python Code
 ```
@@ -42,7 +41,7 @@ Step 1: Load the digest library so we can calculate [MD5](http://en.wikipedia.or
 ```{r}
 library("digest")
 ```
-The next code chunk  A list of photo files are recursively generated using the dir() function. Note the regex "JPG|AVI" parameter to isolate the files of interest.   
+In the next code chunk, a list of photo files are recursively generated using R's dir() function. Note the regex "JPG|AVI" parameter to isolate the files of interest.   
 ```{r}
 test_dir = "/Users/user/test_photo"
 filelist <- dir(test_dir, pattern = "JPG|AVI", recursive=TRUE, all.files =TRUE, full.names=TRUE)
@@ -54,7 +53,7 @@ md5s<-sapply(filelist,digest,file=TRUE,algo="md5", length = 5000)
 duplicate_files = split(filelist,md5s)
 head(duplicate_files)
 ```
-That completes the code conversion. However, to make the results a little more useful, we can split the unique and duplicate files by the length of the lists. An MD5 hash with more than one filename indicates duplicate files: 
+That completes the code conversion  from python to R. However, to make the results a little more useful, we can split the unique and duplicate files by the length of the lists. An MD5 hash with more than one filename indicates duplicate files: 
 ```{r}
 z = duplicate_files
 z2 = sapply(z,function (x){length(x)>1})
@@ -71,9 +70,13 @@ for (itm in filelist) {
    file_digest = digest(itm, file=TRUE, algo="md5", length = 1000)
    fl[[file_digest]]= c(fl[[file_digest]],itm)
  }
+
+```
+..which also produces the desired output (albeit a little less elegantly):
+```{r}
 head(fl)
 ```
 ### Credits
 I welcome any suggestions you may have to improve the code  / to make it more "idiomatic R". 
 The stackoverflow user [nograpes] (http://stackoverflow.com/users/1086688/nograpes) and others in the stackoverflow community were very helpful with the elegant solution to the vectorization problem which I posted [here](http://stackoverflow.com/questions/14060423/how-to-vectorize-this-r-code-using-plyr-apply-or-similar)    
-The HTML output was generated using the [Knitr Package]()
+The HTML output was generated using the Knitr Package from within the [RStudio](http://www.rstudio.org) version 0.97.173.

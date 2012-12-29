@@ -1,31 +1,79 @@
 Find Duplicate Files
 ========================================================
 
-This is a simple script to search a directory tree for all files with duplicate content. it is based upon the python keynote here (TBD)
+This is a simple script to search a directory tree for all files with duplicate content. it is based upon the python code presented by Raymond Hettinger in his PyCon AU 2011 keynote "What Makes Python Awesome". The slides are here: http://slidesha.re/WKkh9M . As an exercise, I decided to convert the code to R. 
 
-Step 1: load the digest library so we calculate MD5 hash values
+
+**The Original Python Code**
+
+```
+# A bit of awesomeness in five minutes
+# Search directory tree for all duplicate files  
+import os, hashlib
+hashmap = {}  # content signature -> list of filenames  
+for path, dirs, files in os.walk('/Users/user/Dropbox/kaggle/r_projects/test_photo'):
+  for filename in files:
+		fullname = os.path.join(path, filename)
+		with open(fullname) as f:
+			d = f.read()         
+		h = hashlib.md5(d).hexdigest()         
+		filelist = hashmap.setdefault(h, [])         
+		filelist.append(fullname)   
+pprint.pprint(hashmap)
+```
+ 
+ which has the following expected output (given my test directory):
+```
+{'79123bbfa69a73b78cf9dfd8047f2bfd': 
+['/Users/user/Dropbox/kaggle/r_projects/test_photo/folder_a/IMG_3480 copy.JPG',
+ '/Users/user/Dropbox/kaggle/r_projects/test_photo/folder_a/IMG_3480.JPG'],
+ '8428f6383f9591a01767c54057770989': 
+ ['/Users/user/Dropbox/kaggle/r_projects/test_photo/folder_a/IMG_3482 copy.JPG',
+  '/Users/user/Dropbox/kaggle/r_projects/test_photo/folder_a/IMG_3482.JPG',
+  '/Users/user/Dropbox/kaggle/r_projects/test_photo/folder_b/IMG_3482 copy.JPG',
+  '/Users/user/Dropbox/kaggle/r_projects/test_photo/folder_b/IMG_3482.JPG'],
+ '8b25c2e6598c33aa1ca255fe1c14a775': 
+ ['/Users/user/Dropbox/kaggle/r_projects/test_photo/folder_a/IMG_3481 copy.JPG',
+  '/Users/user/Dropbox/kaggle/r_projects/test_photo/folder_a/IMG_3481.JPG',
+  '/Users/user/Dropbox/kaggle/r_projects/test_photo/folder_b/IMG_3481.JPG']}
+```                                      
+
+**The R Code**
+
+Step 1: Load the digest library so we can calculate [MD5](http://en.wikipedia.org/wiki/Md5) hash values. The MD5 hash is common method of checking data integrity. We'll be calculating the MD5 hash of each photo file to determine the uniqueness of the file contents (independent of file name and location).  
 ```{r}
 library("digest")
 ```
-
-step 2, create an empty hash to save the results to.
-
+The next code chunk  A list of photo files are recursively generated using the dir() function. Note the regex "JPG|AVI" parameter to isolate the files of interest.   
 ```{r}
-library("hash")
-hashmap <-hash()
+test_dir = "/Users/user/Dropbox/kaggle/r_projects/test_photo"
+filelist <- dir(test_dir, pattern = "JPG|AVI", recursive=TRUE, all.files =TRUE, full.names=TRUE)
+head(filelist)
+```         
+Now that we have the list of files, let's generate the md5 hash function to each file. In this case, I am limiting the MD5 calculation to the first 5000 bytes of the file to speed things up. :
+ ```{r} 
+md5s<-sapply(filelist,digest,file=TRUE,algo="md5", length = 5000)
+duplicate_files = split(filelist,md5s)
+head(duplicate_files)
+```
+That completes the code conversion. However, to make the results a little more useful, we can split the unique and duplicate files by the length of the lists. An MD5 hash with more than one filename indicates duplicate files: 
+```{r}
+z = duplicate_files
+z2 = sapply(z,function (x){length(x)>1})
+z3 = split(z,z2)
+head(z3$"TRUE")
 ```
 
-step 3: convert the following python code to english description + r code:
-for path, dirs, files, in os.walk('/Volumes/Public/book_k'):
-   for filename in files:
-		 fullname = os.path.join(path,filename)
-		 d = open(fullname).read()
-		 h = hashlib.md5(d).hexdigest()
-		 filelist = hashmap.setdefault(h, [])
-         filelist.append(fullname)
-         
-this chunk below will list the files recursively . Not sure if this enough. I think I really want to "walk" a directory instead. note the regex "JPG|AVI" to isolate the files of interest.   
+**Notes on Vectorization**
+A previous attempt utilized a "for" loop o create the list of file digests. But as Jeffery Breen said in his excellent presentation on  [grouping and summarizing data in r] (http://www.slideshare.net/jeffreybreen/grouping-summarizing-data-in-r)   
+"Rule of Thumb: If you are using a loop in R you're probably doing something wrong."    
 ```{r}
-results <- dir("/Volumes/Public/book_k/photo_backup/2010disney2/", pattern = "JPG|AVI", recursive=TRUE, all.files =TRUE, full.names=TRUE)
-```         
-         
+fl = list() #create and empty list to hold md5's and filenames
+for (itm in filelist) {
+   file_digest = digest(itm, file=TRUE, algo="md5", length = 1000)
+   fl[[file_digest]]= c(fl[[file_digest]],itm)
+ }
+head(fl)
+```
+**Credits**  
+The stackoverflow user [nograpes] (http://stackoverflow.com/users/1086688/nograpes) and others in the stackoverflow community were very helpful with the elegant solution to the vectorization problem which I posted [here](http://stackoverflow.com/questions/14060423/how-to-vectorize-this-r-code-using-plyr-apply-or-similar)
